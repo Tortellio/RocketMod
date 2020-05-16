@@ -1,14 +1,12 @@
-﻿using Rocket.Core;
-using Rocket.Core.Logging;
-using Rocket.Unturned.Events;
+﻿using Rocket.Unturned.Events;
 using Rocket.Unturned.Player;
 using SDG.Unturned;
 using Steamworks;
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using Rocket.API;
+using Logger = Rocket.Core.Logging.Logger;
 
 namespace Rocket.Unturned.Chat
 {
@@ -64,7 +62,7 @@ namespace Rocket.Unturned.Chat
         public static Color? GetColorFromHex(string hexString)
         {
             hexString = hexString.Replace("#", "");
-            if(hexString.Length == 3)
+            if (hexString.Length == 3)
             { // #99f
                 hexString = hexString.Insert(1, System.Convert.ToString(hexString[0])); // #999f
                 hexString = hexString.Insert(3, System.Convert.ToString(hexString[2])); // #9999f
@@ -80,13 +78,13 @@ namespace Rocket.Unturned.Chat
             byte b = (byte)(argb & 0xff);
             return GetColorFromRGB(r, g, b);
         }
-		public static Color GetColorFromRGB(byte R,byte G,byte B)
-		{
-			return GetColorFromRGB (R, G, B, 100);
-		}
-        public static Color GetColorFromRGB(byte R,byte G,byte B,short A)
+        public static Color GetColorFromRGB(byte R, byte G, byte B)
         {
-            return new Color((1f / 255f) * R, (1f / 255f) * G, (1f / 255f) * B,(1f/100f) * A);
+            return GetColorFromRGB(R, G, B, 100);
+        }
+        public static Color GetColorFromRGB(byte R, byte G, byte B, short A)
+        {
+            return new Color((1f / 255f) * R, (1f / 255f) * G, (1f / 255f) * B, (1f / 100f) * A);
         }
 
         public static void Say(string message, bool rich)
@@ -94,9 +92,19 @@ namespace Rocket.Unturned.Chat
             Say(message, Palette.SERVER, rich);
         }
 
+        public static void Say(string message, string iconURL, bool rich)
+        {
+            Say(message, Palette.SERVER, iconURL, rich);
+        }
+
         public static void Say(string message)
         {
             Say(message, false);
+        }
+
+        public static void Say(string message, string iconURL)
+        {
+            Say(message, iconURL, false);
         }
 
         public static void Say(IRocketPlayer player, string message)
@@ -104,15 +112,32 @@ namespace Rocket.Unturned.Chat
             Say(player, message, false);
         }
 
+        public static void Say(IRocketPlayer player, string message, string iconURL)
+        {
+            Say(player, message, iconURL, false);
+        }
+
         public static void Say(IRocketPlayer player, string message, Color color, bool rich)
         {
             if (player is ConsolePlayer)
             {
-                Core.Logging.Logger.Log(message, ConsoleColor.Gray);
+                Logger.Log(message, ConsoleColor.Gray);
             }
             else
             {
                 Say(new CSteamID(ulong.Parse(player.Id)), message, color, rich);
+            }
+        }
+
+        public static void Say(IRocketPlayer player, string message, Color color, string iconURL, bool rich)
+        {
+            if (player is ConsolePlayer)
+            {
+                Logger.Log(message, ConsoleColor.Gray);
+            }
+            else
+            {
+                Say(new CSteamID(ulong.Parse(player.Id)), message, color, iconURL, rich);
             }
         }
 
@@ -121,23 +146,47 @@ namespace Rocket.Unturned.Chat
             Say(player, message, color, false);
         }
 
+        public static void Say(IRocketPlayer player, string message, Color color, string iconURL)
+        {
+            Say(player, message, color, iconURL, false);
+        }
+
         public static void Say(string message, Color color, bool rich)
         {
-            Core.Logging.Logger.Log("Broadcast: " + message, ConsoleColor.Gray);
-            foreach(string m in wrapMessage(message))
+            Logger.Log("Broadcast: " + message, ConsoleColor.Gray);
+            foreach (string m in wrapMessage(message))
             {
                 ChatManager.serverSendMessage(m, color, fromPlayer: null, toPlayer: null, mode: EChatMode.GLOBAL, iconURL: null, useRichTextFormatting: rich);
             }
         }
-        
+
+        public static void Say(string message, Color color, string iconURL, bool rich)
+        {
+            Logger.Log("Broadcast: " + message, ConsoleColor.Gray);
+            foreach (string m in wrapMessage(message))
+            {
+                ChatManager.serverSendMessage(m, color, fromPlayer: null, toPlayer: null, mode: EChatMode.GLOBAL, iconURL: iconURL, useRichTextFormatting: rich);
+            }
+        }
+
         public static void Say(string message, Color color)
         {
             Say(message, color, false);
         }
-        
+
+        public static void Say(string message, Color color, string iconURL)
+        {
+            Say(message, color, iconURL, false);
+        }
+
         public static void Say(IRocketPlayer player, string message, bool rich)
         {
             Say(player, message, Palette.SERVER, rich);
+        }
+
+        public static void Say(IRocketPlayer player, string message, string iconURL, bool rich)
+        {
+            Say(player, message, Palette.SERVER, iconURL, rich);
         }
 
         public static void Say(CSteamID CSteamID, string message, bool rich)
@@ -145,24 +194,49 @@ namespace Rocket.Unturned.Chat
             Say(CSteamID, message, Palette.SERVER, rich);
         }
 
+        public static void Say(CSteamID CSteamID, string message, string iconURL, bool rich)
+        {
+            Say(CSteamID, message, Palette.SERVER, iconURL, rich);
+        }
 
         public static void Say(CSteamID CSteamID, string message)
         {
             Say(CSteamID, message, false);
         }
 
+        public static void Say(CSteamID CSteamID, string message, string iconURL)
+        {
+            Say(CSteamID, message, iconURL, false);
+        }
+
         public static void Say(CSteamID CSteamID, string message, Color color, bool rich)
         {
             if (CSteamID == null || CSteamID.ToString() == "0")
             {
-                Core.Logging.Logger.Log(message, ConsoleColor.Gray);
+                Logger.Log(message, ConsoleColor.Gray);
             }
             else
             {
                 SteamPlayer toPlayer = PlayerTool.getSteamPlayer(CSteamID);
-                foreach(string m in wrapMessage(message))
+                foreach (string m in wrapMessage(message))
                 {
                     ChatManager.serverSendMessage(m, color, fromPlayer: null, toPlayer: toPlayer, mode: EChatMode.SAY, iconURL: null, useRichTextFormatting: rich);
+                }
+            }
+        }
+
+        public static void Say(CSteamID CSteamID, string message, Color color, string iconURL, bool rich)
+        {
+            if (CSteamID == null || CSteamID.ToString() == "0")
+            {
+                Logger.Log(message, ConsoleColor.Gray);
+            }
+            else
+            {
+                SteamPlayer toPlayer = PlayerTool.getSteamPlayer(CSteamID);
+                foreach (string m in wrapMessage(message))
+                {
+                    ChatManager.serverSendMessage(m, color, fromPlayer: null, toPlayer: toPlayer, mode: EChatMode.SAY, iconURL: iconURL, useRichTextFormatting: rich);
                 }
             }
         }
@@ -172,33 +246,38 @@ namespace Rocket.Unturned.Chat
             Say(CSteamID, message, color, false);
         }
 
-         public static List<string> wrapMessage(string text)
-         {
-             if (text.Length == 0) return new List<string>();
-             string[] words = text.Split(' ');
-             List<string> lines = new List<string>();
-             string currentLine = "";
-             int maxLength = 90;
-             foreach (var currentWord in words)
-             {
-  
-                 if ((currentLine.Length > maxLength) ||
-                     ((currentLine.Length + currentWord.Length) > maxLength))
-                 {
-                     lines.Add(currentLine);
-                     currentLine = "";
-                 }
-  
-                 if (currentLine.Length > 0)
-                     currentLine += " " + currentWord;
-                 else
-                     currentLine += currentWord;
-  
-             }
-  
-             if (currentLine.Length > 0)
-                 lines.Add(currentLine);
-                 return lines;
+        public static void Say(CSteamID CSteamID, string message, Color color, string iconURL)
+        {
+            Say(CSteamID, message, color, iconURL, false);
+        }
+
+        public static List<string> wrapMessage(string text)
+        {
+            if (text.Length == 0) return new List<string>();
+            string[] words = text.Split(' ');
+            List<string> lines = new List<string>();
+            string currentLine = "";
+            int maxLength = 90;
+            foreach (var currentWord in words)
+            {
+
+                if ((currentLine.Length > maxLength) ||
+                    ((currentLine.Length + currentWord.Length) > maxLength))
+                {
+                    lines.Add(currentLine);
+                    currentLine = "";
+                }
+
+                if (currentLine.Length > 0)
+                    currentLine += " " + currentWord;
+                else
+                    currentLine += currentWord;
+
             }
+
+            if (currentLine.Length > 0)
+                lines.Add(currentLine);
+            return lines;
+        }
     }
 }
